@@ -1,0 +1,125 @@
+<?php
+/**
+ * @file 
+ * 
+ * Copyright 2011 New Signature
+ * http://www.newsignature.com
+ *
+ * @author Andrew Marcus
+ * @since Oct 4, 2011
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function addressfield_tokens_theme($existing, $type, $theme, $path) {
+  $theme = array(
+    'addressfield_formatter__citystate' => array(
+      'variables' => array('address' => NULL),
+      'file' => 'addressfield_tokens.theme.inc',
+    ),
+    'addressfield_formatter__linear' => array(
+      'variables' => array('address' => NULL),
+      'file' => 'addressfield_tokens.theme.inc',
+    ),
+  );
+  
+  return $theme;
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function addressfield_tokens_field_formatter_info() {
+  return array(
+    'addressfield_citystate' => array(
+      'label' => t('City/State'),
+      'field types' => array('addressfield'),
+    ),
+    'addressfield_linear' => array(
+      'label' => t('One line'),
+      'field types' => array('addressfield'),
+    ),
+    'addressfield_country' => array(
+      'label' => t('Country'),
+      'field types' => array('addressfield'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function addressfield_tokens_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  
+  switch ($display['type']) {
+    case 'addressfield_citystate':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          '#theme' => array('addressfield_formatter__citystate', 'addressfield_formatter__' . $item['country'], 'addressfield_formatter'),
+          '#address' => $item,
+        );
+      }
+      break;
+      
+    case 'addressfield_linear':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          '#theme' => array('addressfield_formatter__linear', 'addressfield_formatter__' . $item['country'], 'addressfield_formatter'),
+          '#address' => $item,
+        );
+      }
+      break;
+      
+    case 'addressfield_country':
+      foreach ($items as $delta => $item) {
+        if (!empty($item['country'])) {
+          $country = _addressfield_tokens_country($item['country']);
+          if (!$country) {
+            $country = $item['country'];
+          }
+          $element[$delta] = array(
+            '#type' => 'markup',
+            '#markup' => $country,
+            '#prefix' => '<span class="addressfield-country">',
+            '#suffix' => '</span>',
+          );
+        }
+      }
+      break;
+  }
+  return $element;
+}
+
+/**
+ * Gets the list of countries from the locale settings in Drupal.
+ * 
+ * @return array An array of countries.  The keys are the 2-letter 
+ *   abbreviations and the values are the full country names.
+ */
+function _addressfield_tokens_countries() {
+  $countries = &drupal_static(__FUNCTION__);
+  if (empty($countries)) {
+    include_once('includes/locale.inc');
+    $countries = country_get_list();
+  }
+  return $countries;
+}
+
+/**
+ * Gets the name of the country with the given abbreviation.
+ * 
+ * @param string $country The 2-letter abbreviation of the country.
+ * @return string The name of the country, or FALSE.
+ */
+function _addressfield_tokens_country($country) {
+  $countries = _addressfield_tokens_countries();
+  
+  // Country abbreviations will always be two uppercase letters. 
+  $country = strtoupper($country);
+  if (!empty($country) && isset($countries[$country])) {
+    return $countries[$country];
+  }
+  return FALSE;
+}

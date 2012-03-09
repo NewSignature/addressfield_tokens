@@ -1,0 +1,7 @@
+name = Address Field Tokens
+description = Creates tokens for address fields.
+core = 7.x
+package = Fields
+version = 7.x-1.0-dev
+
+dependencies[] = addressfield
